@@ -1,0 +1,93 @@
+Factors Affecting The Algo
+
+Data Sets Used:
+
+Data sent to Disaster Cluster:
+1) Zone ID
+2) Time Period
+
+Data Returned from Disaster Cluster:
+1) Probability of a Disaster
+2) Severity of the Disaster (Scale of 1 to 10)
+
+Data sent to Rainfall Data Cluster:
+1) Zone ID
+2) Time Period
+
+Data Returned from Rainfall Cluster:
+1) Rainfall Scale (0 to 10, where 0 is drought & 10 is flood.)
+2) Probability of the rainfall in the preffered time-period
+
+Data Sent to FCI Cluster:
+1) Zone ID
+
+Data Returned from FCI CLuster:
+1) Last year's Total stock of the particular grain
+2) Last year's Stock left of the particular grain
+
+3) Avg. Total stock of the particular grain in last years
+4) Avg. Stock left of the particular grain in last years
+
+5) Avg. Amount of grains exported in last years
+6) Last year's Total Amount of grains exported
+
+7) Avg. Amoun of grains kept in Emergency Stock
+8) Last year's Emergency Stock
+
+9) Grains used for Govt. purposes
+
+
+// Algorithm
+
+1) Stock reduced by Disasterous Factors.
+2) Stock reduced by Govt. use.
+3) Emergency Stock reduced by rainfall factors.
+
+//start
+
+var total_stock = get(fci_cluster);
+
+var base_em_stock = 15 * total_stock / 100 ;
+
+var avg_years_em_stock = get(fci_cluster);
+var last_em_stock = get(fci_cluster);
+
+var avg_stock = ( avg_years_em_stock + last_em_stock ) / 2 ;
+
+// if production is less this year, add extra 5%.
+if ( base_em_stock < last_em_stock ) {
+	base_em_stock = last_em_stock + ( 5 * total_stock / 100 );
+}
+
+// if production is proper this year, minify it.
+if ( base_em_stock >= last_em_stock ) {
+	base_em_stock = avg_stock;
+}
+
+// including disaster factors
+var disaster_prob = get(disaster_cluster);
+var disaster_severity = get(disaster_cluster);
+if ( disaster_prob > 0.5 ){
+	base_em_stock = last_em_stock + ( (5 * (ln disaster_severity)) * total_stock / 100 );
+}
+
+// including rainfall factors
+var rainfall_prob = get(rainfall_cluster);
+var rainfall_severity = get(rainfall_cluster);
+if ( rainfall_prob > 0.5 ){
+	if ( !( rainfall_severity > 3.5 && rainfall_severity < 8 ) )	// Rain disaster
+	base_em_stock = last_em_stock + ( (5 * (ln rainfall_severity)) * total_stock / 100 );
+}
+
+
+// Including self-country usages
+var govt_grains = get(fci_cluster);
+total_stock -= govt_grains;
+
+var export;
+export = total_stock - base_em_stock;
+
+console.log(export);
+
+
+// END
